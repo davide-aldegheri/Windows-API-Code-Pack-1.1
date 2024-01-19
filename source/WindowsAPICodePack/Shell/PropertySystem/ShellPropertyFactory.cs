@@ -169,14 +169,15 @@ namespace Microsoft.WindowsAPICodePack.Shell.PropertySystem
             // The hash for the function is based off the generic type and which type (constructor) we're using.
             var hash = GetTypeHash(type, thirdType);
 
-            if (!_storeCache.TryGetValue(hash, out var ctor))
+            lock (_storeCache)
             {
+                if (_storeCache.TryGetValue(hash, out var ctor)) return ctor(propKey, propDesc, thirdArg);
                 Type[] argTypes = { typeof(PropertyKey), typeof(ShellPropertyDescription), thirdType };
                 ctor = ExpressConstructor(type, argTypes);
                 _storeCache.Add(hash, ctor);
+                
+                return ctor(propKey, propDesc, thirdArg);
             }
-
-            return ctor(propKey, propDesc, thirdArg);
         }
 
         private static int GetTypeHash(params Type[] types) => GetTypeHash((IEnumerable<Type>)types);
